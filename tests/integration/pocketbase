@@ -1,7 +1,9 @@
 #!/bin/bash
 DBDIR=`mktemp -d`
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-#export TMP_EMAIL_DIR=`mktemp -d`
+export TMP_EMAIL_DIR="${TMP_EMAIL_DIR:-$(mktemp -d)}"
+mkdir -p "${TMP_EMAIL_DIR}"
+echo "TMP_EMAIL_DIR=${TMP_EMAIL_DIR}"
 cp ${SCRIPT_DIR}/sendmail ${DBDIR}
 chmod 755 ${DBDIR}/sendmail
 cd ${DBDIR}

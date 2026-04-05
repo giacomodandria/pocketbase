@@ -16,6 +16,7 @@ from pocketbase.services.log_service import LogService
 from pocketbase.services.realtime_service import RealtimeService
 from pocketbase.services.record_service import RecordService
 from pocketbase.services.settings_service import SettingsService
+from pocketbase.services.batch_service import BatchService
 from pocketbase.stores.base_auth_store import AuthStore, BaseAuthStore
 
 
@@ -44,18 +45,22 @@ class Client:
         self.logs = LogService(self)
         self.settings = SettingsService(self)
         self.realtime = RealtimeService(self)
+        self.batch = BatchService(self)
         self.record_service: Dict[str, RecordService] = {}
 
     def _send(self, path: str, req_config: dict[str, Any]) -> httpx.Response:
         """Sends an api http request returning response object."""
         config: dict[str, Any] = {"method": "GET"}
         config.update(req_config)
+        headers = dict(config.get("headers", {}) or {})
         # check if Authorization header can be added
-        if self.auth_store.token and (
-            "headers" not in config or "Authorization" not in config["headers"]
-        ):
-            config["headers"] = config.get("headers", {})
-            config["headers"].update({"Authorization": self.auth_store.token})
+        if self.auth_store.token and "Authorization" not in headers:
+            headers["Authorization"] = self.auth_store.token
+        # An empty Authorization value is used internally as a sentinel to
+        # suppress auth injection for login-like requests. Don't send it.
+        if headers.get("Authorization", None) == "":
+            headers.pop("Authorization")
+        config["headers"] = headers or None
         # build url + path
         url = self.build_url(path)
         # send the request

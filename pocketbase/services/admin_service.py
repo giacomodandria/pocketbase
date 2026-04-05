@@ -26,8 +26,11 @@ class AdminService(CrudService[Admin]):
     def decode(self, data: dict[str, Any]) -> Admin:
         return Admin(data)
 
+    def base_collection_path(self) -> str:
+        return "/api/collections/_superusers"
+
     def base_crud_path(self) -> str:
-        return "/api/admins"
+        return self.base_collection_path() + "/records"
 
     def update(
         self,
@@ -66,7 +69,9 @@ class AdminService(CrudService[Admin]):
 
     def auth_response(self, response_data: dict[str, Any]) -> AdminAuthResponse:
         """Prepare successful authorize response."""
-        admin = self.decode(response_data.pop("admin", {}))
+        admin = self.decode(
+            response_data.pop("record", response_data.pop("admin", {}))
+        )
         token = response_data.pop("token", "")
         if token and admin:
             self.client.auth_store.save(token, admin)
@@ -88,7 +93,7 @@ class AdminService(CrudService[Admin]):
         body_params = body_params or {}
         body_params.update({"identity": email, "password": password})
         response_data = self.client.send(
-            self.base_crud_path() + "/auth-with-password",
+            self.base_collection_path() + "/auth-with-password",
             {
                 "method": "POST",
                 "params": query_params,
@@ -111,7 +116,7 @@ class AdminService(CrudService[Admin]):
         """
         return self.auth_response(
             self.client.send(
-                self.base_crud_path() + "/auth-refresh",
+                self.base_collection_path() + "/auth-refresh",
                 {"method": "POST", "params": query_params, "body": body_params},
             )
         )
@@ -126,7 +131,7 @@ class AdminService(CrudService[Admin]):
         body_params = body_params or {}
         body_params.update({"email": email})
         self.client.send(
-            self.base_crud_path() + "/request-password-reset",
+            self.base_collection_path() + "/request-password-reset",
             {
                 "method": "POST",
                 "params": query_params,
@@ -153,7 +158,7 @@ class AdminService(CrudService[Admin]):
             }
         )
         self.client.send(
-            self.base_crud_path() + "/confirm-password-reset",
+            self.base_collection_path() + "/confirm-password-reset",
             {
                 "method": "POST",
                 "params": query_params,

@@ -1,4 +1,5 @@
 from .admin_service import AdminAuthResponse, AdminService
+from .batch_service import BatchRequest, BatchService
 from .collection_service import CollectionService
 from .log_service import HourlyStats, LogService
 from .realtime_service import RealtimeService
@@ -14,4 +15,6 @@ __all__ = [
     "RealtimeService",
     "RecordService",
     "SettingsService",
+    "BatchService",
+    "BatchRequest",
 ]

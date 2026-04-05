@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import quote, urlencode
 
 from pocketbase.models.record import Record
+from pocketbase.models.external_auth import ExternalAuth
 from pocketbase.services.realtime_service import Callable, MessageData
 from pocketbase.services.utils.crud_service import CrudService
 from pocketbase.utils import camel_to_snake, validate_token
@@ -59,7 +60,7 @@ class RecordService(CrudService[Record]):
         self.collection_id_or_name = collection_id_or_name
 
     def decode(self, data: dict[str, Any]) -> Record:
-        return Record(data)
+        return Record(data, client=self.client)
 
     def base_crud_path(self) -> str:
         return self.base_collection_path() + "/records"
@@ -189,7 +190,10 @@ class RecordService(CrudService[Record]):
         auth_providers = [
             AuthProviderInfo(**auth_provider)
             for auth_provider in map(
-                apply_pythonic_keys, response_data.get("authProviders", [])
+                apply_pythonic_keys,
+                response_data.get("authProviders")
+                or response_data.get("auth_providers")
+                or [],
             )
         ]
         return AuthMethodsList(
@@ -499,3 +503,105 @@ class RecordService(CrudService[Record]):
         Deprecated: Use confirm_verification instead.
         """
         return self.confirm_verification(token, body_params, query_params)
+
+    def request_otp(
+        self,
+        email: str,
+        body_params: dict[str, Any] | None = None,
+        query_params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Sends an email with a One-Time Password and returns the created OTP id.
+        """
+        body_params = body_params or {}
+        body_params.update({"email": email})
+        return self.client.send(
+            self.base_collection_path() + "/request-otp",
+            {
+                "method": "POST",
+                "params": query_params,
+                "body": body_params,
+            },
+        )
+
+    def auth_with_otp(
+        self,
+        otp_id: str,
+        password: str,
+        body_params: dict[str, Any] | None = None,
+        query_params: dict[str, Any] | None = None,
+    ) -> RecordAuthResponse:
+        """
+        Authenticate a record with an OTP id and the emailed code.
+        """
+        body_params = body_params or {}
+        body_params.update({"otpId": otp_id, "password": password})
+        response_data = self.client.send(
+            self.base_collection_path() + "/auth-with-otp",
+            {
+                "method": "POST",
+                "params": query_params,
+                "body": body_params,
+                "headers": {"Authorization": ""},
+            },
+        )
+        return self.auth_response(response_data)
+
+    def impersonate(
+        self,
+        id: str,
+        duration: int = 0,
+        body_params: dict[str, Any] | None = None,
+        query_params: dict[str, Any] | None = None,
+    ) -> RecordAuthResponse:
+        """
+        Generates an auth token for another auth record.
+        """
+        body_params = body_params or {}
+        if duration > 0:
+            body_params.update({"duration": duration})
+
+        response_data = self.client.send(
+            f"{self.base_collection_path()}/impersonate/{quote(id)}",
+            {
+                "method": "POST",
+                "params": query_params,
+                "body": body_params,
+            },
+        )
+        return self.auth_response(response_data)
+
+    def list_external_auths(
+        self,
+        record_id: str,
+        query_params: dict[str, Any] | None = None,
+    ) -> list[ExternalAuth]:
+        """
+        Lists the linked external auth providers for a record.
+        """
+        response_data = self.client.send(
+            f"{self.base_collection_path()}/records/{quote(record_id)}/external-auths",
+            {
+                "method": "GET",
+                "params": query_params,
+            },
+        )
+        return [ExternalAuth(item) for item in response_data]
+
+    def unlink_external_auth(
+        self,
+        record_id: str,
+        provider: str,
+        query_params: dict[str, Any] | None = None,
+    ) -> bool:
+        """
+        Unlinks a specific OAuth2 provider from the specified record.
+        """
+        self.client.send(
+            f"{self.base_collection_path()}/records/{quote(record_id)}/external-auths/{quote(provider)}",
+            {
+                "method": "DELETE",
+                "params": query_params,
+            },
+        )
+        return True

@@ -1,10 +1,11 @@
-from os import environ, path
+from os import path
 from uuid import uuid4
 
 import pytest
 
 from pocketbase import PocketBase
 from pocketbase.utils import ClientResponseError
+from tests.integration.conftest import require_tmp_email_dir
 
 
 class TestSettingsService:
@@ -23,13 +24,12 @@ class TestSettingsService:
         assert state.appname == settings["meta"]["appName"]
 
     def test_email(self, client: PocketBase, state):
+        mail_dir = require_tmp_email_dir()
         addr = uuid4().hex
         assert client.settings.test_email(
             f"settings@{addr}.com", "verification"
         )
-        assert path.exists(
-            environ.get("TMP_EMAIL_DIR", "") + f"/settings@{addr}.com"
-        )
+        assert path.exists(mail_dir + f"/settings@{addr}.com")
 
     def test_s3(self, client: PocketBase, state):
         with pytest.raises(ClientResponseError) as exc:

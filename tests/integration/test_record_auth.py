@@ -1,4 +1,4 @@
-from os import environ, path
+from os import path
 from time import sleep
 from uuid import uuid4
 
@@ -8,6 +8,7 @@ from pocketbase import PocketBase
 from pocketbase.models.admin import Admin
 from pocketbase.models.record import Record
 from pocketbase.utils import ClientResponseError
+from tests.integration.conftest import require_tmp_email_dir
 
 
 class TestRecordAuthService:
@@ -41,12 +42,13 @@ class TestRecordAuthService:
         client.collection("users").authRefresh()
 
     def test_confirm_email(self, client: PocketBase, state):
+        mail_dir = require_tmp_email_dir()
         # new_email = "%s@%s.com" % (uuid4().hex[:16], uuid4().hex[:16])
         print(state.email)
         sleep(0.2)
         assert client.collection("users").requestVerification(state.email)
         sleep(0.2)
-        mail = environ.get("TMP_EMAIL_DIR", "") + f"/{state.email}"
+        mail = mail_dir + f"/{state.email}"
         assert path.exists(mail)
         print("START")
         for line in open(mail).readlines():
@@ -71,10 +73,11 @@ class TestRecordAuthService:
         state.password = new_password
 
     def test_change_email(self, client: PocketBase, state):
+        mail_dir = require_tmp_email_dir()
         new_email = "%s@%s.com" % (uuid4().hex[:16], uuid4().hex[:16])
         assert client.collection("users").requestEmailChange(new_email)
         sleep(0.1)
-        mail = environ.get("TMP_EMAIL_DIR", "") + f"/{new_email}"
+        mail = mail_dir + f"/{new_email}"
         assert path.exists(mail)
         for line in open(mail).readlines():
             if "/confirm-email-change/" in line:
@@ -87,11 +90,12 @@ class TestRecordAuthService:
         state.email = new_email
 
     def test_request_password_reset(self, client: PocketBase, state):
+        mail_dir = require_tmp_email_dir()
         client.auth_store.clear()
         state.password = uuid4().hex
         assert client.collection("users").requestPasswordReset(state.email)
         sleep(0.1)
-        mail = environ.get("TMP_EMAIL_DIR", "") + f"/{state.email}"
+        mail = mail_dir + f"/{state.email}"
         assert path.exists(mail)
         for line in open(mail).readlines():
             if "/confirm-password-reset/" in line:

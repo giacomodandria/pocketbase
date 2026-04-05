@@ -1,4 +1,4 @@
-from os import environ, path
+from os import path
 from time import sleep
 from uuid import uuid4
 
@@ -7,6 +7,7 @@ import pytest
 from pocketbase import PocketBase
 from pocketbase.models.admin import Admin
 from pocketbase.utils import ClientResponseError
+from tests.integration.conftest import require_tmp_email_dir
 
 
 class TestAdminService:
@@ -50,9 +51,10 @@ class TestAdminService:
         client.admins.auth_with_password(state.new_email, new_password)
 
     def test_admin_password_reset(self, client: PocketBase, state):
+        mail_dir = require_tmp_email_dir()
         assert client.admins.requestPasswordReset(state.new_email)
         sleep(0.1)
-        mail = environ.get("TMP_EMAIL_DIR", "") + f"/{state.new_email}"
+        mail = mail_dir + f"/{state.new_email}"
         assert path.exists(mail)
         for line in open(mail).readlines():
             if "/confirm-password-reset/" in line:

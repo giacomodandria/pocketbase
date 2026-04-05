@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import fields as dataclass_fields
 from typing import Any
 
 from pocketbase.models.utils.base_model import BaseModel
@@ -17,6 +18,21 @@ class Collection(BaseModel):
     update_rule: str | None
     delete_rule: str | None
     options: dict[str, Any]
+
+    @staticmethod
+    def _normalize_field(field: dict[str, Any]) -> dict[str, Any]:
+        normalized = dict(field)
+        normalized["auto_generate_pattern"] = normalized.pop(
+            "autogeneratePattern", None
+        )
+        normalized["primary_key"] = normalized.pop("primaryKey", False)
+        allowed_keys = {f.name for f in dataclass_fields(CollectionField)}
+        options = dict(normalized.pop("options", {}) or {})
+        for key in list(normalized.keys()):
+            if key not in allowed_keys:
+                options[key] = normalized.pop(key)
+        normalized["options"] = options
+        return normalized
 
     def load(self, data: dict[str, Any]) -> None:
         super().load(data)
@@ -36,11 +52,9 @@ class Collection(BaseModel):
         fields = data.get("fields", [])
         self.fields = []
         for field in fields:
-            field["auto_generate_pattern"] = field.pop(
-                "autogeneratePattern", None
+            self.fields.append(
+                CollectionField(**self._normalize_field(field))
             )
-            field["primary_key"] = field.pop("primaryKey", False)
-            self.fields.append(CollectionField(**field))
 
     def is_base(self):
         return self.type == "base"

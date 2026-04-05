@@ -106,6 +106,7 @@ class RealtimeService(BaseService):
                         action=data["action"],
                         record=Record(
                             data=data["record"],
+                            client=self.client,
                         ),
                     )
                 )

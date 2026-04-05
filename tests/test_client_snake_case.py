@@ -9,9 +9,7 @@ class DummyClient:
 
 class DummyRecord(Record):
     def __init__(self, data, client=None):
-        self.client = client
-        self.expand = {}
-        self.load(data)
+        super().__init__(data, client=client)
 
 
 def test_camel_to_snake_enabled():
@@ -42,3 +40,22 @@ def test_record_snake_case_disabled():
     assert not hasattr(record, "another_field")
     assert record.myFieldName == "value"  # type: ignore
     assert record.anotherField == 42  # type: ignore
+
+
+def test_record_expands_use_same_client_case_rules():
+    client = DummyClient(auto_snake_case=True)
+    data = {
+        "expand": {
+            "linkedRecord": {
+                "id": "rec_1",
+                "collectionId": "demo",
+                "collectionName": "demo",
+                "childField": "value",
+            }
+        }
+    }
+
+    record = DummyRecord(data, client=client)
+
+    assert "linked_record" in record.expand
+    assert record.expand["linked_record"].child_field == "value"  # type: ignore

@@ -14,3 +14,20 @@ def test_custom_headers(httpx_mock: HTTPXMock):
         request = httpx_mock.get_request()
         assert request is not None
         assert request.headers["key"] == "value"
+
+
+def test_empty_authorization_header_is_not_sent(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json={})
+
+    client = PocketBase("http://testclient")
+    client.send(
+        "/api/test",
+        {
+            "method": "GET",
+            "headers": {"Authorization": ""},
+        },
+    )
+
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert "authorization" not in request.headers
