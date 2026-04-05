@@ -7,9 +7,11 @@ import httpx
 from pocketbase.errors import ClientResponseError
 from pocketbase.models import FileUpload
 from pocketbase.models.record import Record
+from pocketbase.utils import deprecated
 from pocketbase.services.admin_service import AdminService
 from pocketbase.services.backups_service import BackupsService
 from pocketbase.services.collection_service import CollectionService
+from pocketbase.services.cron_service import CronService
 from pocketbase.services.files_service import FileService
 from pocketbase.services.health_service import HealthService
 from pocketbase.services.log_service import LogService
@@ -40,6 +42,7 @@ class Client:
         self.admins = AdminService(self)
         self.backups = BackupsService(self)
         self.collections = CollectionService(self)
+        self.crons = CronService(self)
         self.files = FileService(self)
         self.health = HealthService(self)
         self.logs = LogService(self)
@@ -136,7 +139,7 @@ class Client:
             path = path[1:]
         return url + path
 
-    # TODO: add deprecated decorator
+    @deprecated("client.files.get_url")
     def get_file_url(
         self,
         record: Record,
@@ -145,6 +148,6 @@ class Client:
     ):
         return self.files.get_url(record, filename, query_params)
 
-    # TODO: add deprecated decorator
+    @deprecated("client.files.get_token")
     def get_file_token(self) -> str:
         return self.files.get_token()

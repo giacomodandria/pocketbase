@@ -140,5 +140,5 @@ class SSEClient:
             self._loop_thread.listeners = self._listeners
 
     def close(self) -> None:
-        # TODO: does not work like this
         self._loop_thread.kill = True
+        self._loop_thread.client.close()

@@ -2,10 +2,30 @@ from __future__ import annotations
 
 import base64
 import datetime
+import functools
 import json
 import re
+import warnings
 
 from .errors import ClientResponseError  # noqa: F401
+
+
+def deprecated(alternative: str):
+    """Decorator that marks a function or method as deprecated."""
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            warnings.warn(
+                f"{func.__qualname__} is deprecated, use {alternative} instead",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 def camel_to_snake(name: str, enabled: bool = True) -> str:

@@ -36,3 +36,22 @@ def test_batch_service_queues_and_sends(httpx_mock):
     
     assert batch.requests[2]["method"] == "DELETE"
     assert batch.requests[2]["url"] == "/api/collections/tasks/records/id_456"
+
+
+def test_batch_service_upsert(httpx_mock):
+    client = PocketBase("http://localhost:8090")
+
+    httpx_mock.add_response(
+        url="http://localhost:8090/api/batch",
+        method="POST",
+        json=[{"status": 200}],
+    )
+
+    batch = client.batch.create()
+    batch.collection("tasks").upsert({"id": "id_789", "title": "Upserted"})
+    result = batch.send()
+
+    assert len(result) == 1
+    assert batch.requests[0]["method"] == "PUT"
+    assert batch.requests[0]["url"] == "/api/collections/tasks/records"
+    assert batch.requests[0]["body"] == {"id": "id_789", "title": "Upserted"}

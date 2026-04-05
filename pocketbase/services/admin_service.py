@@ -4,7 +4,7 @@ from typing import Any
 
 from pocketbase.models.admin import Admin
 from pocketbase.services.utils.crud_service import CrudService
-from pocketbase.utils import validate_token
+from pocketbase.utils import deprecated, validate_token
 
 
 class AdminAuthResponse:
@@ -167,34 +167,28 @@ class AdminService(CrudService[Admin]):
         )
         return True
 
-    # TODO: add deprecated decorator
+    @deprecated("auth_refresh")
     def authRefresh(
         self,
         body_params: dict[str, Any] | None = None,
         query_params: dict[str, Any] | None = None,
     ) -> AdminAuthResponse:
-        """
-        Deprecated: Use `auth_refresh` instead.
-        """
         return self.auth_refresh(
             body_params=body_params, query_params=query_params
         )
 
-    # TODO: add deprecated decorator
+    @deprecated("request_password_reset")
     def requestPasswordReset(
         self,
         email: str,
         body_params: dict[str, Any] | None = None,
         query_params: dict[str, Any] | None = None,
     ) -> bool:
-        """
-        Deprecated: Use `request_password_reset` instead.
-        """
         return self.request_password_reset(
             email, body_params=body_params, query_params=query_params
         )
 
-    # TODO: add deprecated decorator
+    @deprecated("confirm_password_reset")
     def confirmPasswordReset(
         self,
         password_reset_token: str,
@@ -203,9 +197,6 @@ class AdminService(CrudService[Admin]):
         body_params: dict[str, Any] | None = None,
         query_params: dict[str, Any] | None = None,
     ) -> bool:
-        """
-        Deprecated: Use `confirm_password_reset` instead.
-        """
         return self.confirm_password_reset(
             password_reset_token,
             password,
